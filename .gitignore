@@ -7,3 +7,4 @@ data/
 outputs/
 *.db
 *.zip
+.claude/settings.local.json

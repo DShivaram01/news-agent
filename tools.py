@@ -29,7 +29,13 @@ class ToolError(Exception):
 
 
 _valid_article_ids: set[str] = set()
-_article_texts: dict[str, str] = {}  # article_id -> title + summary
+_article_meta: dict[str, dict] = {}  # article_id -> {"text", "source", "published", "link"}
+
+
+def reset_run_state() -> None:
+    """Clear per-run tracking of fetched articles. Call once at the start of each agent run."""
+    _valid_article_ids.clear()
+    _article_meta.clear()
 
 
 # --- the fake tool ---------------------------------------------------------
@@ -76,36 +82,57 @@ def fetch_news(args: FetchNewsArgs) -> dict:
     result = news.collect(feeds, hours=args.hours, max_items=args.max_items, keyword=args.keyword)
     for item in result["items"]:
         _valid_article_ids.add(item["id"])
-        _article_texts[item["id"]] = (item.get("title", "") + " " + item.get("summary", "")).lower()
+        _article_meta[item["id"]] = {
+            "text": item.get("title", "") + " " + item.get("summary", ""),
+            "source": item.get("source", ""),
+            "published": item.get("published"),
+            "link": item.get("link"),
+        }
     return result
 
 
 # --- save_mention -------------------------------------------------------
 
+_NO_TICKER_WORDS = {"", "none", "n/a", "null"}
+
+
 class SaveMentionArgs(BaseModel):
     article_id: str
-    company: str
+    company: str = Field(min_length=1)
     market: Literal["US", "IN"]
-    event: str = Field(max_length=200)
+    event: str = Field(min_length=1, max_length=200)
     ticker: Optional[str] = Field(None, max_length=15)
+
+    @field_validator("company", "event", mode="before")
+    @classmethod
+    def _strip(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
     @field_validator("ticker", mode="before")
     @classmethod
     def _validate_ticker(cls, value):
         if value is None:
             return None
-        if not re.match(r"^[A-Z0-9.&-]{1,15}$", value):
+        if not isinstance(value, str):
+            raise ValueError(f"Ticker must be a string, got {type(value).__name__}")
+        stripped = value.strip()
+        if stripped.lower() in _NO_TICKER_WORDS:
+            return None
+        if not re.match(r"^[A-Z0-9.&-]{1,15}$", stripped):
             raise ValueError(f"Ticker must match [A-Z0-9.&-] and be 1-15 chars, got '{value}'")
-        return value
+        return stripped
 
 
 def save_mention(args: SaveMentionArgs) -> dict:
     if args.article_id not in _valid_article_ids:
         raise ToolError(f"Article '{args.article_id}' not found in this run's fetch_news results.")
 
+    meta = _article_meta.get(args.article_id, {})
+
     if args.ticker:
-        text = _article_texts.get(args.article_id, "")
-        if args.ticker.lower() not in text:
+        text = meta.get("text", "")
+        pattern = rf"(?<![A-Za-z0-9]){re.escape(args.ticker)}(?![A-Za-z0-9])"
+        if not re.search(pattern, text):
             raise ToolError(
                 f"Ticker '{args.ticker}' does not appear in the article's title or summary. "
                 "Only record tickers that the article explicitly mentions."
@@ -116,10 +143,10 @@ def save_mention(args: SaveMentionArgs) -> dict:
         company=args.company,
         event=args.event,
         article_id=args.article_id,
-        source="",
-        published_utc=None,
+        source=meta.get("source", ""),
+        published_utc=meta.get("published"),
         ticker=args.ticker,
-        link=None,
+        link=meta.get("link"),
     )
     if result["saved"]:
         return {"saved": True, "row_id": result["row_id"]}

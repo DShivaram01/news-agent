@@ -39,6 +39,7 @@ def run_agent(client, model: str, system_prompt: str, user_prompt: str,
               settings: llm.ModelSettings = llm.ModelSettings(),
               on_reasoning: Optional[Callable[[str], None]] = None,
               on_retry: Optional[Callable[[int, float, Exception], None]] = None) -> AgentResult:
+    toolbox.reset_run_state()
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},

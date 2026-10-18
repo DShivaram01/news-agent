@@ -1,8 +1,12 @@
 """SQLite database for tracking company mentions in news."""
+import csv
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional
+
+CSV_HEADER = ["first_seen_utc", "published_utc", "market", "company", "ticker", "event", "article_id", "source", "link"]
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
 DB_PATH = Path(__file__).parent / "data" / "mentions.db"
 
@@ -65,37 +69,34 @@ def save_mention(
         conn.close()
 
 
+def _csv_safe(value: str) -> str:
+    """Prefix a leading formula character so Excel/Sheets never execute cell content as a formula."""
+    if value and value[0] in _FORMULA_PREFIXES:
+        return "'" + value
+    return value
+
+
 def export_csv(csv_path: Optional[Path] = None, db_path: Optional[Path] = None) -> None:
-    """Export all mentions to CSV with UTF-8 BOM."""
+    """Export all mentions to CSV with UTF-8 BOM. Always writes the header, even with no data."""
     csv_path = csv_path or Path(__file__).parent / "outputs" / "mentions.csv"
     db_path = db_path or DB_PATH
 
     csv_path.parent.mkdir(exist_ok=True)
-    if not db_path.exists():
-        csv_path.write_text("", encoding="utf-8-sig")
-        return
 
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute(
-        "SELECT first_seen_utc, published_utc, market, company, ticker, event, article_id, source, link FROM mentions ORDER BY first_seen_utc DESC"
-    ).fetchall()
-    conn.close()
+    rows = []
+    if db_path.exists():
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            rows = conn.execute(
+                "SELECT first_seen_utc, published_utc, market, company, ticker, event, article_id, source, link "
+                "FROM mentions ORDER BY first_seen_utc DESC"
+            ).fetchall()
+        finally:
+            conn.close()
 
-    lines = ["first_seen_utc,published_utc,market,company,ticker,event,article_id,source,link"]
-    for row in rows:
-        fields = [
-            row["first_seen_utc"],
-            row["published_utc"] or "",
-            row["market"],
-            row["company"],
-            row["ticker"] or "",
-            row["event"],
-            row["article_id"],
-            row["source"],
-            row["link"] or "",
-        ]
-        escaped = [f'"{f.replace(chr(34), chr(34)+chr(34))}"' if any(c in f for c in (',', '"', '\n')) else f for f in fields]
-        lines.append(",".join(escaped))
-
-    csv_path.write_text("\n".join(lines) + "\n", encoding="utf-8-sig")
+    with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow(CSV_HEADER)
+        for row in rows:
+            writer.writerow([_csv_safe(row[col] or "") for col in CSV_HEADER])
