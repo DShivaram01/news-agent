@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_store.py -xvs)",
+      "Bash(python -m pytest -q)",
+      "Bash(python -m json.tool)"
+    ]
+  }
+}

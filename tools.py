@@ -12,6 +12,7 @@ Two things worth noticing:
     message instead of crashing. Often it just fixes the call and retries.
 """
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Literal, Optional
@@ -20,10 +21,15 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 import news
+import store
 
 
 class ToolError(Exception):
     """Raise this for problems the model should hear about and can fix."""
+
+
+_valid_article_ids: set[str] = set()
+_article_texts: dict[str, str] = {}  # article_id -> title + summary
 
 
 # --- the fake tool ---------------------------------------------------------
@@ -67,7 +73,58 @@ def fetch_news(args: FetchNewsArgs) -> dict:
     feeds = news.load_feeds(market=args.market)
     if not feeds:
         raise ToolError(f"No enabled feeds for market '{args.market}'. Check feeds.json.")
-    return news.collect(feeds, hours=args.hours, max_items=args.max_items, keyword=args.keyword)
+    result = news.collect(feeds, hours=args.hours, max_items=args.max_items, keyword=args.keyword)
+    for item in result["items"]:
+        _valid_article_ids.add(item["id"])
+        _article_texts[item["id"]] = (item.get("title", "") + " " + item.get("summary", "")).lower()
+    return result
+
+
+# --- save_mention -------------------------------------------------------
+
+class SaveMentionArgs(BaseModel):
+    article_id: str
+    company: str
+    market: Literal["US", "IN"]
+    event: str = Field(max_length=200)
+    ticker: Optional[str] = Field(None, max_length=15)
+
+    @field_validator("ticker", mode="before")
+    @classmethod
+    def _validate_ticker(cls, value):
+        if value is None:
+            return None
+        if not re.match(r"^[A-Z0-9.&-]{1,15}$", value):
+            raise ValueError(f"Ticker must match [A-Z0-9.&-] and be 1-15 chars, got '{value}'")
+        return value
+
+
+def save_mention(args: SaveMentionArgs) -> dict:
+    if args.article_id not in _valid_article_ids:
+        raise ToolError(f"Article '{args.article_id}' not found in this run's fetch_news results.")
+
+    if args.ticker:
+        text = _article_texts.get(args.article_id, "")
+        if args.ticker.lower() not in text:
+            raise ToolError(
+                f"Ticker '{args.ticker}' does not appear in the article's title or summary. "
+                "Only record tickers that the article explicitly mentions."
+            )
+
+    result = store.save_mention(
+        market=args.market,
+        company=args.company,
+        event=args.event,
+        article_id=args.article_id,
+        source="",
+        published_utc=None,
+        ticker=args.ticker,
+        link=None,
+    )
+    if result["saved"]:
+        return {"saved": True, "row_id": result["row_id"]}
+    else:
+        return {"saved": False, "reason": "duplicate"}
 
 
 # --- registry --------------------------------------------------------------
@@ -134,6 +191,42 @@ TOOLS: dict[str, Tool] = {
             },
             args_model=FetchNewsArgs,
             func=fetch_news,
+        ),
+        Tool(
+            name="save_mention",
+            description=(
+                "Record a company mention found in the news. The mention is saved to a database and can be exported to CSV. "
+                "Only save one mention per company per article. Use tickers only if the article text explicitly states them."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "article_id": {
+                        "type": "string",
+                        "description": "The id of the article from fetch_news.",
+                    },
+                    "company": {
+                        "type": "string",
+                        "description": "The company name (required).",
+                    },
+                    "market": {
+                        "type": "string",
+                        "enum": ["US", "IN"],
+                        "description": "US or IN.",
+                    },
+                    "event": {
+                        "type": "string",
+                        "description": "One line summary of what happened (max 200 chars).",
+                    },
+                    "ticker": {
+                        "type": "string",
+                        "description": "Stock ticker if the article mentions it (optional, max 15 chars).",
+                    },
+                },
+                "required": ["article_id", "company", "market", "event"],
+            },
+            args_model=SaveMentionArgs,
+            func=save_mention,
         ),
     ]
 }

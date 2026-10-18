@@ -11,7 +11,7 @@ load_dotenv(ROOT / ".env")
 
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 MODEL = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
-MAX_STEPS = int(os.getenv("AGENT_MAX_STEPS", "8"))
+MAX_STEPS = int(os.getenv("AGENT_MAX_STEPS", "30"))
 TRACE_DIR = ROOT / "traces"
 
 

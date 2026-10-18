@@ -349,7 +349,7 @@ def test_the_model_can_use_the_tool_inside_the_loop(wired, tmp_path):
     assert tool_msg["role"] == "tool" and tool_msg["tool_call_id"] == "n1"
     payload = json.loads(tool_msg["content"])
     assert any("Hindustan" in i["title"] for i in payload["items"]) and "untrusted" in payload["note"]
-    assert {t["function"]["name"] for t in client.requests[0]["tools"]} == {"get_time", "fetch_news"}
+    assert {t["function"]["name"] for t in client.requests[0]["tools"]} == {"get_time", "fetch_news", "save_mention"}
 
 
 # --- try_tool.py ---------------------------------------------------------------------------------------
