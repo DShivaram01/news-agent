@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+<channel>
+<title>Yahoo Finance</title>
+<link>https://finance.yahoo.com</link>
+<description>At Yahoo Finance, you get free stock quotes, up-to-date news.</description>
+<item>
+<title>Westinghouse Air Brake (WAB) Signs $700 Million Rail Services Deal</title>
+<link>https://finance.yahoo.com/markets/stocks/articles/wab.html</link>
+<guid isPermaLink="false">wab-guid</guid>
+<pubDate>2026-10-17T01:43:50Z</pubDate>
+<source url="https://finance.yahoo.com">Yahoo Finance</source>
+</item>
+<item>
+<title>Strive CEO: Bitcoin Could Go Higher as Dollar Debt Worries Grow</title>
+<link>https://finance.yahoo.com/markets/crypto/articles/strive.html</link>
+<guid isPermaLink="false">strive-guid</guid>
+<pubDate>2026-10-17T01:51:00Z</pubDate>
+<source url="https://finance.yahoo.com">Yahoo Finance</source>
+</item>
+<item>
+<title>Gamma Industries (GAMI) Lands Navy Order, Date Missing From Feed</title>
+<link>https://finance.yahoo.com/markets/stocks/articles/gamma.html</link>
+<guid isPermaLink="false">gamma-guid</guid>
+<source url="https://finance.yahoo.com">Yahoo Finance</source>
+</item>
+</channel>
+</rss>

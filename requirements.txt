@@ -1,0 +1,7 @@
+openai>=1.40
+pydantic>=2.5
+python-dotenv>=1.0
+feedparser>=6.0
+# Windows doesn't ship the IANA timezone database, so zoneinfo needs this
+tzdata
+pytest>=8.0

@@ -1,0 +1,78 @@
+{
+  "feeds": [
+    {
+      "name": "PR Newswire",
+      "market": "US",
+      "url": "https://www.prnewswire.com/rss/news-releases-list.rss",
+      "enabled": true,
+      "status": "verified",
+      "note": "Company press releases. Very noisy: lots of law-firm 'investigation' spam."
+    },
+    {
+      "name": "Yahoo Finance",
+      "market": "US",
+      "url": "https://finance.yahoo.com/news/rssindex",
+      "enabled": true,
+      "status": "verified",
+      "note": "Tickers often appear in brackets in the headline, e.g. (WAB). No descriptions."
+    },
+    {
+      "name": "Economic Times - Markets",
+      "market": "IN",
+      "url": "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
+      "enabled": true,
+      "status": "unverified",
+      "note": "URL taken from a feed directory; I couldn't fetch it from my side."
+    },
+    {
+      "name": "Economic Times - Stocks",
+      "market": "IN",
+      "url": "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
+      "enabled": true,
+      "status": "unverified",
+      "note": "Same as above."
+    },
+    {
+      "name": "Economic Times - Companies",
+      "market": "IN",
+      "url": "https://economictimes.indiatimes.com/news/company/rssfeeds/2143429.cms",
+      "enabled": true,
+      "status": "unverified",
+      "note": "Same as above."
+    },
+    {
+      "name": "Moneycontrol - Buzzing Stocks",
+      "market": "IN",
+      "url": "https://www.moneycontrol.com/rss/buzzingstocks.xml",
+      "enabled": true,
+      "status": "unverified",
+      "note": "URL from memory, not checked. If it errors, check Moneycontrol's RSS page for the current address."
+    },
+    {
+      "name": "Moneycontrol - Latest News",
+      "market": "IN",
+      "url": "https://www.moneycontrol.com/rss/latestnews.xml",
+      "enabled": true,
+      "status": "unverified",
+      "note": "URL from memory, not checked."
+    },
+    {
+      "name": "Google News - US contract and order wins",
+      "market": "US",
+      "url": "https://news.google.com/rss/search?q=stock+contract+OR+order+OR+deal+when:1d&hl=en-US&gl=US&ceid=US:en",
+      "enabled": false,
+      "source_in_title": true,
+      "status": "unverified",
+      "note": "OFF by default. Google doesn't document this RSS search as a public API and its robots.txt blocked my fetcher. Plenty of people use it, but it's your call. Set enabled to true to try it."
+    },
+    {
+      "name": "Google News - India contract and order wins",
+      "market": "IN",
+      "url": "https://news.google.com/rss/search?q=stock+order+OR+contract+OR+deal+when:1d&hl=en-IN&gl=IN&ceid=IN:en",
+      "enabled": false,
+      "source_in_title": true,
+      "status": "unverified",
+      "note": "OFF by default, same reasons as the US one."
+    }
+  ]
+}
